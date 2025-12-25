@@ -11,6 +11,19 @@ export default function EditModelPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Convert ISO timestamp (UTC) to local `datetime-local` input value (YYYY-MM-DDTHH:mm)
+  const isoToLocalDatetime = (iso?: string) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+  };
+
   useEffect(() => {
     if (!slug) return;
     setLoading(true);
@@ -24,6 +37,7 @@ export default function EditModelPage() {
           description: data.description || data.summary || '',
           credits: data.credits ?? 0,
           version: data.version ?? '',
+          released_at: data.released_at ? isoToLocalDatetime(data.released_at) : '',
           categories: Array.isArray(data.categories) ? data.categories.join(', ') : (data.categories || ''),
         });
       }
@@ -39,7 +53,7 @@ export default function EditModelPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { ...form, credits: Number(form.credits), version: form.version || undefined, categories: form.categories ? form.categories.split(',').map((c: string) => c.trim()) : [] };
+      const payload = { ...form, credits: Number(form.credits), version: form.version || undefined, categories: form.categories ? form.categories.split(',').map((c: string) => c.trim()) : [], released_at: form.released_at ? new Date(form.released_at).toISOString() : null };
       await updateModel(slug, payload);
       router.push(`/models/${encodeURIComponent(payload.slug || slug)}`);
     } catch (err) {
@@ -69,6 +83,16 @@ export default function EditModelPage() {
         <div>
           <label className="block text-sm font-medium">Version</label>
           <input name="version" value={form.version} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Release Date</label>
+          <input
+            name="released_at"
+            type="datetime-local"
+            value={form.released_at || ''}
+            onChange={onChange}
+            className="mt-1 block w-full border rounded px-2 py-1"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium">Credits</label>

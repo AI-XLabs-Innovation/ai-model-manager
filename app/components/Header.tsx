@@ -18,7 +18,7 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-3">
-              <span className="font-semibold text-lg">Versely Studio</span>
+              <span className="font-semibold text-lg">Versely Studio .</span>
             </Link>
           </div>
 
