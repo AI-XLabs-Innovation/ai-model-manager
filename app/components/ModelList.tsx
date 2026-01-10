@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 
 function ProviderBadge({ provider }: { provider?: string }) {
@@ -12,11 +12,33 @@ function ProviderBadge({ provider }: { provider?: string }) {
 }
 
 export default function ModelList({ items }: { items: any }) {
-  if (!items) return <p className="text-gray-600">No models found.</p>;
+  const [query, setQuery] = useState("");
 
-  const list = Array.isArray(items) ? items : typeof items === "object" ? Object.values(items) : [];
+  const list = useMemo(() => {
+    return Array.isArray(items) ? items : typeof items === "object" && items ? Object.values(items) : [];
+  }, [items]);
 
-  if (list.length === 0) return <p className="text-gray-600">No models found.</p>;
+  const filtered = useMemo(() => {
+    const q = (query || "").trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((m: any) => {
+      const parts = [
+        m?.name,
+        m?.model,
+        m?.title,
+        m?.slug,
+        m?.description,
+        m?.summary,
+        m?.details,
+        m?.provider,
+        m?.source,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return parts.includes(q);
+    });
+  }, [list, query]);
 
   const copyToClipboard = async (text: string) => {
     if (!text) return;
@@ -28,8 +50,29 @@ export default function ModelList({ items }: { items: any }) {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {list.map((m: any, idx: number) => {
+    <div>
+      <div className="mb-4 flex items-center gap-2">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search models by name, slug, provider, or description..."
+          className="flex-1 rounded border px-3 py-2 text-sm bg-white dark:bg-gray-900"
+        />
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="text-sm text-gray-600 bg-gray-100 px-3 py-2 rounded hover:bg-gray-200"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-gray-600">No models match your search.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((m: any, idx: number) => {
         const key = m?.slug || m?.id || m?.model || idx;
         const title = m?.name || m?.model || m?.title || m?.slug || 'Untitled';
         const provider = m?.provider || m?.source || undefined;
@@ -40,7 +83,7 @@ export default function ModelList({ items }: { items: any }) {
         return (
           <article key={key} className="bg-white border rounded-lg shadow-sm overflow-hidden">
             <div className="flex">
-              <div className="w-24 h-24 flex-shrink-0 bg-gray-50 flex items-center justify-center">
+              <div className="w-24 h-24 shrink-0 bg-gray-50 flex items-center justify-center">
                 {thumbnail ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={thumbnail} alt={title} className="w-full h-full object-cover" />
@@ -83,6 +126,8 @@ export default function ModelList({ items }: { items: any }) {
           </article>
         );
       })}
+        </div>
+      )}
     </div>
   );
 }
