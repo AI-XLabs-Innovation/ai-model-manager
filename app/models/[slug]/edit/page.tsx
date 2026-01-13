@@ -85,7 +85,8 @@ export default function EditModelPage() {
         category: rankingForm.category || null,
         is_latest: rankingForm.is_latest,
       };
-      const response = await fetch('http://localhost:3000/api/ai-models/rankings', {
+      const API_URL = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000';
+      const response = await fetch(`${API_URL}/api/v1/ai-models/rankings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
