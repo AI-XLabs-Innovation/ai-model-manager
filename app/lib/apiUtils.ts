@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { createClient } from './supabase';
 
 /**
  * Get authentication headers with Bearer token for API requests
@@ -6,7 +6,7 @@ import { supabase } from './supabase';
  */
 export const getAuthHeaders = async (): Promise<{ Authorization?: string }> => {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await createClient().auth.getSession();
     if (session?.access_token) {
       return {
         Authorization: `Bearer ${session.access_token}`
@@ -40,7 +40,7 @@ export const getAuthHeadersWithContentType = async (
  */
 export const getAuthToken = async (): Promise<string | null> => {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await createClient().auth.getSession();
     return session?.access_token || null;
   } catch (error) {
     console.error('Error getting auth token:', error);
