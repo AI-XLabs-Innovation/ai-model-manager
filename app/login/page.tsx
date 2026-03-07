@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useTransition } from 'react';
+import React, { useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { signIn } from './actions';
 
@@ -8,7 +8,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   unauthorized: 'You do not have admin access.',
 };
 
-function LoginContent() {
+export default function LoginPage() {
   const searchParams = useSearchParams();
   const rawError = searchParams.get('error') || '';
   const errorMsg = ERROR_MESSAGES[rawError] || rawError;
@@ -85,13 +85,5 @@ function LoginContent() {
         </p>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginContent />
-    </Suspense>
   );
 }
