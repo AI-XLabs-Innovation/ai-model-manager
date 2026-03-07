@@ -1,49 +1,41 @@
-import { createClient } from './supabase';
-
 /**
- * Get authentication headers with Bearer token for API requests
- * @returns Headers object with Authorization Bearer token
+ * Get authentication headers for backend API requests.
+ * Fetches the session token from the server via /api/session
+ * so the Supabase anon key is never exposed to the browser.
  */
 export const getAuthHeaders = async (): Promise<{ Authorization?: string }> => {
   try {
-    const { data: { session } } = await createClient().auth.getSession();
-    if (session?.access_token) {
-      return {
-        Authorization: `Bearer ${session.access_token}`
-      };
-    }
+    const res = await fetch('/api/session', { cache: 'no-store' });
+    if (!res.ok) return {};
+    const { token } = await res.json();
+    if (token) return { Authorization: `Bearer ${token}` };
     return {};
-  } catch (error) {
-    console.error('Error getting auth token:', error);
+  } catch {
     return {};
   }
 };
 
 /**
- * Get authentication headers with content type for API requests
- * @param contentType - Content-Type header value
- * @returns Headers object with Authorization Bearer token and Content-Type
+ * Get authentication headers with a Content-Type header.
  */
 export const getAuthHeadersWithContentType = async (
   contentType: string = 'application/json'
 ): Promise<{ Authorization?: string; 'Content-Type': string }> => {
   const authHeaders = await getAuthHeaders();
-  return {
-    ...authHeaders,
-    'Content-Type': contentType
-  };
+  return { ...authHeaders, 'Content-Type': contentType };
 };
 
 /**
- * Get current auth token
- * @returns Auth token string or null
+ * Get current auth token string, or null if not authenticated.
  */
 export const getAuthToken = async (): Promise<string | null> => {
   try {
-    const { data: { session } } = await createClient().auth.getSession();
-    return session?.access_token || null;
-  } catch (error) {
-    console.error('Error getting auth token:', error);
+    const res = await fetch('/api/session', { cache: 'no-store' });
+    if (!res.ok) return null;
+    const { token } = await res.json();
+    return token ?? null;
+  } catch {
     return null;
   }
 };
+
