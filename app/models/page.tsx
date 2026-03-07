@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import ModelList from "../components/ModelList";
+import { getAuthHeaders } from "../lib/apiUtils";
 
 export default function ModelsPage() {
   const [models, setModels] = useState([]);
@@ -16,7 +17,10 @@ export default function ModelsPage() {
     const fetchModels = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${apiBase}/api/v1/ai-models/?page=${page}&page_size=${pageSize}`);
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${apiBase}/api/v1/ai-models/?page=${page}&page_size=${pageSize}`, {
+          headers
+        });
         const json = await res.json();
         setModels(json.data.models || []);
         setTotal(json.data?.total ?? 0);

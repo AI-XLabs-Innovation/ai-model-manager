@@ -4,11 +4,10 @@ import Link from "next/link";
 
 export default function Header() {
   const nav = [
-    { title: "Home", href: "/" },
-    { title: "All Models", href: "/models" },
-    { title: "Images", href: "/models/images" },
-    { title: "Videos", href: "/models/videos" },
-    { title: "Lipsync", href: "/models/lipsync" },
+    { title: "Dashboard", href: "/" },
+    { title: "Users", href: "/users" },
+    { title: "Purchases", href: "/purchases" },
+    { title: "Models", href: "/models" },
     { title: "Providers", href: "/providers" },
   ];
 

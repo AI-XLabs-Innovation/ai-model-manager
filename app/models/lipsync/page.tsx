@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import ModelList from "../../components/ModelList";
+import { getAuthHeaders } from "../../lib/apiUtils";
 
 export default function LipsyncModelsPage() {
   const [models, setModels] = useState<any[]>([]);
@@ -11,7 +12,10 @@ export default function LipsyncModelsPage() {
     const fetchModels = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${apiBase}/api/v1/ai-models/lipsync`);
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${apiBase}/api/v1/ai-models/lipsync`, {
+          headers
+        });
         const json = await res.json();
         setModels(json.data.models || []);
       } catch (e) {
