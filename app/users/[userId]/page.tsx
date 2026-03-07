@@ -8,12 +8,12 @@ interface Profile {
   id: string;
   email: string;
   full_name: string | null;
-  avatar_url: string | null;
+  avatar_id: string | null;
   credits: number;
   created_at: string;
   updated_at: string;
   revenuecat_app_user_id: string | null;
-  push_token: string | null;
+  expo_push_token: string | null;
   onboarding_data: any;
 }
 
@@ -131,8 +131,8 @@ export default function UserDetailPage() {
 
       {/* Profile header */}
       <div className="mt-6 flex items-start gap-6">
-        {profile.avatar_url && (
-          <img src={profile.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover" />
+        {profile.avatar_id && (
+          <img src={profile.avatar_id} alt="" className="w-16 h-16 rounded-full object-cover" />
         )}
         <div>
           <h1 className="text-2xl font-bold">{profile.full_name || profile.email}</h1>
@@ -206,7 +206,7 @@ export default function UserDetailPage() {
           <InfoRow label="Joined" value={new Date(profile.created_at).toLocaleString()} />
           <InfoRow label="Last Updated" value={new Date(profile.updated_at).toLocaleString()} />
           <InfoRow label="RevenueCat ID" value={profile.revenuecat_app_user_id || "—"} mono />
-          <InfoRow label="Push Token" value={profile.push_token ? "✓ Set" : "—"} />
+          <InfoRow label="Push Token" value={profile.expo_push_token ? "✓ Set" : "—"} />
         </dl>
       </div>
 
