@@ -17,6 +17,7 @@ export default function Header() {
     { title: "Purchases", href: "/purchases" },
     { title: "Models", href: "/models" },
     { title: "Providers", href: "/providers" },
+    { title: "Beta Invite", href: "/beta-invite" },
   ];
 
   function handleSignOut() {

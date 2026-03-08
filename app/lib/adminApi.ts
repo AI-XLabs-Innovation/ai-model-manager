@@ -62,3 +62,27 @@ export async function listPurchases(
 export async function getPurchaseStats() {
   return apiFetch("/purchases/stats");
 }
+
+// ─── Email ────────────────────────────────────────────────────────────────────
+
+async function emailFetch<T = any>(path: string, options?: RequestInit): Promise<T> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${apiBase}/api/v1/email${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+      ...(options?.headers ?? {}),
+    },
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.message || "Request failed");
+  return json;
+}
+
+export async function sendBetaInvite(emails: string[]) {
+  return emailFetch("/send-beta-invite", {
+    method: "POST",
+    body: JSON.stringify({ emails }),
+  });
+}
