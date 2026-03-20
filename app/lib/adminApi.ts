@@ -137,6 +137,35 @@ export async function sendPushNotification(title: string, body: string, userIds?
   });
 }
 
+// ─── Slideshows ──────────────────────────────────────────────────────────────
+
+export async function listSlideshows(
+  params: { page?: number; limit?: number; status?: string; search?: string } = {}
+) {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.status) q.set("status", params.status);
+  if (params.search) q.set("search", params.search);
+  return apiFetch(`/slideshows?${q.toString()}`);
+}
+
+export async function deleteAdminSlideshow(id: string) {
+  return apiFetch(`/slideshows/${id}`, { method: "DELETE" });
+}
+
+// ─── Content Moderation ──────────────────────────────────────────────────────
+
+export async function deleteGeneration(type: string, id: string) {
+  return apiFetch(`/generations/${type}/${id}`, { method: "DELETE" });
+}
+
+// ─── Credit Analytics ────────────────────────────────────────────────────────
+
+export async function getCreditAnalytics() {
+  return apiFetch("/credit-analytics");
+}
+
 // ─── Email ────────────────────────────────────────────────────────────────────
 
 async function emailFetch<T = any>(path: string, options?: RequestInit): Promise<T> {

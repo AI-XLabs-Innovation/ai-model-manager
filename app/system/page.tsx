@@ -1,6 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { getSystemHealth, listBackgroundTasks } from "../lib/adminApi";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
 
 export default function SystemPage() {
   const [health, setHealth] = useState<any>(null);
@@ -10,13 +11,19 @@ export default function SystemPage() {
   const [taskFilter, setTaskFilter] = useState("");
   const [taskTotal, setTaskTotal] = useState(0);
 
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([
+  const fetchAll = useCallback(async () => {
+    await Promise.all([
       getSystemHealth().then((res) => setHealth(res.data)),
       listBackgroundTasks({ page: taskPage, limit: 15, status: taskFilter || undefined }).then((res) => { setTasks(res.data?.tasks ?? []); setTaskTotal(res.data?.total ?? 0); }),
-    ]).catch(console.error).finally(() => setLoading(false));
+    ]).catch(console.error);
   }, [taskPage, taskFilter]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchAll().finally(() => setLoading(false));
+  }, [fetchAll]);
+
+  const { lastUpdated, paused, setPaused } = useAutoRefresh(fetchAll, 30_000);
 
   if (loading) return <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-20" />)}</div>;
 
@@ -24,10 +31,20 @@ export default function SystemPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="page-header" style={{ marginBottom: 0 }}><h1>System Health</h1><p>Monitor backend services and background tasks</p></div>
-        <button onClick={() => { getSystemHealth().then((res) => setHealth(res.data)); }} className="btn btn-secondary btn-sm">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPaused(!paused)}
+            className={`btn btn-sm ${paused ? "btn-secondary" : "btn-primary"}`}
+          >
+            {paused ? "Paused" : "Live"}
+          </button>
+          {lastUpdated && (
+            <span className="text-xs text-[var(--muted)]">
+              {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
       </div>
 
       {health && (

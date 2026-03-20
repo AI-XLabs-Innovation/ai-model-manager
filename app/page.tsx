@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
-import { getDashboardStats, getSystemHealth } from "./lib/adminApi";
+import React, { useCallback, useEffect, useState } from "react";
+import { getDashboardStats, getSystemHealth, getCreditAnalytics } from "./lib/adminApi";
+import { useAutoRefresh } from "./hooks/useAutoRefresh";
 
 interface Stats {
   users: { total: number };
@@ -18,19 +19,32 @@ interface Health {
   server: { uptime_seconds: number; memory_usage_mb: number };
 }
 
+interface CreditAnalytics {
+  total_credits_used: number;
+  by_type: Record<string, { count: number; credits: number }>;
+  top_models: Record<string, { model: string; count: number; credits: number }[]>;
+  daily_usage_7d: { date: string; credits: number; count: number }[];
+}
+
 export default function Home() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
+  const [creditData, setCreditData] = useState<CreditAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      getDashboardStats().then((res) => setStats(res.data)),
+  const fetchAll = useCallback(async () => {
+    await Promise.all([
+      getDashboardStats().then((res) => setStats(res.data)).catch(() => {}),
       getSystemHealth().then((res) => setHealth(res.data)).catch(() => {}),
-    ])
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      getCreditAnalytics().then((res) => setCreditData(res.data)).catch(() => {}),
+    ]);
   }, []);
+
+  useEffect(() => {
+    fetchAll().finally(() => setLoading(false));
+  }, [fetchAll]);
+
+  const { lastUpdated, paused, setPaused } = useAutoRefresh(fetchAll, 30_000);
 
   return (
     <div>
@@ -40,14 +54,28 @@ export default function Home() {
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-[var(--muted-foreground)] mt-1">Overview of your platform</p>
         </div>
-        {health && (
-          <div className="flex items-center gap-2 px-3 py-1.5 glass rounded-full">
-            <span className={`w-2 h-2 rounded-full ${health.status === "healthy" ? "bg-emerald-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]"}`} />
-            <span className="text-xs text-[var(--muted-foreground)]">
-              {health.status === "healthy" ? "All systems operational" : "System degraded"}
+        <div className="flex items-center gap-3">
+          {health && (
+            <div className="flex items-center gap-2 px-3 py-1.5 glass rounded-full">
+              <span className={`w-2 h-2 rounded-full ${health.status === "healthy" ? "bg-emerald-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]"}`} />
+              <span className="text-xs text-[var(--muted-foreground)]">
+                {health.status === "healthy" ? "All systems operational" : "System degraded"}
+              </span>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setPaused(!paused)}
+            className={`px-3 py-1.5 glass rounded-full text-xs font-medium ${paused ? "text-amber-400" : "text-emerald-400"}`}
+          >
+            {paused ? "Paused" : "Live"}
+          </button>
+          {lastUpdated && (
+            <span className="text-[var(--muted)] text-xs">
+              {lastUpdated.toLocaleTimeString()}
             </span>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Primary stats */}
@@ -102,6 +130,38 @@ export default function Home() {
         </div>
       )}
 
+      {/* Credit usage analytics */}
+      {creditData && (
+        <div className="glass p-5 mb-6">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-4">Credit Usage</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+            <MiniStat label="Total Used" value={creditData.total_credits_used} color="text-[var(--accent-light)]" highlight />
+            <MiniStat label="Images" value={creditData.by_type.images?.credits ?? 0} color="text-blue-400" />
+            <MiniStat label="Videos" value={creditData.by_type.videos?.credits ?? 0} color="text-purple-400" />
+            <MiniStat label="Audio" value={creditData.by_type.audios?.credits ?? 0} color="text-emerald-400" />
+            <MiniStat label="Music" value={creditData.by_type.music?.credits ?? 0} color="text-pink-400" />
+          </div>
+          {creditData.daily_usage_7d.length > 0 && (
+            <div className="p-4 rounded-lg bg-white/[0.02] border border-white/[0.06]">
+              <p className="text-[11px] text-[var(--muted)] mb-3">Daily credit spend (last 7 days)</p>
+              <div className="flex items-end gap-1 h-20">
+                {creditData.daily_usage_7d.map((d) => {
+                  const max = Math.max(...creditData.daily_usage_7d.map((x) => x.credits), 1);
+                  const pct = (d.credits / max) * 100;
+                  return (
+                    <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-[10px] text-[var(--muted)]">{d.credits}</span>
+                      <div className="w-full bg-[var(--accent-light)] opacity-70 rounded-t" style={{ height: `${Math.max(pct, 4)}%` }} />
+                      <span className="text-[10px] text-[var(--muted)]">{d.date.slice(5)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Quick links */}
       <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--muted)] mb-3">Quick Actions</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -111,6 +171,7 @@ export default function Home() {
         <QuickLink title="Generations" desc="All generated content" href="/generations" icon="M4 16l4.586-4.586a2 2 0 012.828 0L16 16" />
         <QuickLink title="API Keys" desc="Manage API access" href="/api-keys" icon="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586" />
         <QuickLink title="Notifications" desc="Send push messages" href="/notifications" icon="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11" />
+        <QuickLink title="Slideshows" desc="View & manage slideshows" href="/slideshows" icon="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
         <QuickLink title="System Health" desc="Monitor services" href="/system" icon="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2" />
         <QuickLink title="Beta Invite" desc="Send test invites" href="/beta-invite" icon="M3 8l7.89 5.26a2 2 0 002.22 0L21 8" />
       </div>

@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { listGenerations } from "../lib/adminApi";
+import { listGenerations, deleteGeneration } from "../lib/adminApi";
 
 const TYPE_TABS = [
   { label: "All", value: "all" },
@@ -26,6 +26,7 @@ export default function GenerationsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [type, setType] = useState("all");
   const [search, setSearch] = useState("");
+  const [deleting, setDeleting] = useState<string | null>(null);
   const limit = 20;
 
   useEffect(() => {
@@ -39,6 +40,22 @@ export default function GenerationsPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [page, type, search]);
+
+  const handleDelete = async (item: any) => {
+    if (!confirm(`Delete this ${item.type}? This cannot be undone.`)) return;
+    const key = `${item.type}-${item.id}`;
+    setDeleting(key);
+    try {
+      await deleteGeneration(item.type, item.id);
+      setItems((prev) => prev.filter((i) => `${i.type}-${i.id}` !== key));
+      setTotal((t) => t - 1);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete");
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   return (
     <div>
@@ -68,7 +85,7 @@ export default function GenerationsPage() {
       ) : (
         <div className="glass overflow-hidden">
           <table className="admin-table">
-            <thead><tr><th>Type</th><th>Model</th><th>Prompt</th><th>User</th><th>Date</th><th>Preview</th></tr></thead>
+            <thead><tr><th>Type</th><th>Model</th><th>Prompt</th><th>User</th><th>Date</th><th>Preview</th><th>Actions</th></tr></thead>
             <tbody>
               {items.map((item: any) => (
                 <tr key={`${item.type}-${item.id}`}>
@@ -78,6 +95,16 @@ export default function GenerationsPage() {
                   <td>{item.profiles ? <Link href={`/users/${item.user_id}`} className="text-[var(--accent-light)] hover:underline text-xs">{item.profiles.full_name || item.profiles.email || item.user_id?.slice(0, 8)}</Link> : <span className="text-[var(--muted)] text-xs">{item.user_id?.slice(0, 8) || "--"}</span>}</td>
                   <td className="text-[var(--muted)] whitespace-nowrap">{item.created_at ? new Date(item.created_at).toLocaleDateString() : "--"}</td>
                   <td>{(item.image_url || item.video_url || item.audio_url) ? <a href={item.image_url || item.video_url || item.audio_url} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">View</a> : <span className="text-[var(--muted)] text-xs">--</span>}</td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(item)}
+                      disabled={deleting === `${item.type}-${item.id}`}
+                      className="btn btn-sm text-red-400 hover:text-red-300 disabled:opacity-50"
+                    >
+                      {deleting === `${item.type}-${item.id}` ? "Removing..." : "Remove"}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
