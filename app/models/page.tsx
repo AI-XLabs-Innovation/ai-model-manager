@@ -1,8 +1,9 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import ModelList from "../components/ModelList";
 import { getAuthHeaders } from "../lib/apiUtils";
+import { getPricing } from "../lib/adminApi";
 
 export default function ModelsPage() {
   const [models, setModels] = useState([]);
@@ -11,7 +12,14 @@ export default function ModelsPage() {
   const [pageSize, setPageSize] = useState<number>(12);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
+  const [pricingData, setPricingData] = useState<any>(null);
   const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
+
+  useEffect(() => {
+    getPricing()
+      .then((res) => setPricingData(res.data))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -35,19 +43,38 @@ export default function ModelsPage() {
     fetchModels();
   }, [apiBase, page, pageSize]);
 
+  // Build pricing lookup map: model name -> billing config
+  const pricingMap = useMemo(() => {
+    if (!pricingData?.content_type) return {};
+    const map: Record<string, any> = {};
+    for (const category of Object.values(pricingData.content_type) as any[]) {
+      if (!Array.isArray(category)) continue;
+      for (const entry of category) {
+        if (entry.model && entry.billing) {
+          map[entry.model] = entry.billing;
+        }
+      }
+    }
+    return map;
+  }, [pricingData]);
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">All AI Models</h1>
+        <div>
+          <h1 className="text-2xl font-bold">All AI Models</h1>
+          <p className="text-sm text-gray-400 mt-1">{total} models total</p>
+        </div>
         <div>
           <Link href="/models/new" className="text-sm bg-blue-600 text-white px-3 py-1 rounded">Create Model</Link>
         </div>
       </div>
-      <div className="mb-4">
-        <Link href="/models/images" className="mr-4 text-blue-600">Images</Link>
-        <Link href="/models/videos" className="mr-4 text-blue-600">Videos</Link>
-        <Link href="/models/lipsync" className="mr-4 text-blue-600">Lipsync</Link>
-        <Link href="/providers" className="text-blue-600">Providers</Link>
+      <div className="mb-4 flex flex-wrap gap-3">
+        <Link href="/models/images" className="text-sm bg-white/5 border border-white/10 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Images</Link>
+        <Link href="/models/videos" className="text-sm bg-white/5 border border-white/10 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Videos</Link>
+        <Link href="/models/lipsync" className="text-sm bg-white/5 border border-white/10 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Lipsync</Link>
+        <Link href="/providers" className="text-sm bg-white/5 border border-white/10 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Providers</Link>
+        <Link href="/pricing" className="text-sm bg-amber-600 text-white px-3 py-1.5 rounded hover:bg-amber-700 transition-colors">View All Pricing</Link>
       </div>
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -57,7 +84,7 @@ export default function ModelsPage() {
         </div>
       ) : (
         <>
-          <ModelList items={models} />
+          <ModelList items={models} pricingMap={pricingMap} />
 
           <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-gray-100">Showing {(models.length > 0 ? (page - 1) * pageSize + 1 : 0)}–{Math.min(page * pageSize, total)} of {total}</div>

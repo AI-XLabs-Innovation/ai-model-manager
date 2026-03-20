@@ -24,6 +24,18 @@ export async function getDashboardStats() {
   return apiFetch("/stats");
 }
 
+// ─── System Health ────────────────────────────────────────────────────────────
+
+export async function getSystemHealth() {
+  return apiFetch("/health");
+}
+
+// ─── Pricing ──────────────────────────────────────────────────────────────────
+
+export async function getPricing() {
+  return apiFetch("/pricing");
+}
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 export async function listUsers(params: { page?: number; limit?: number; search?: string } = {}) {
@@ -61,6 +73,68 @@ export async function listPurchases(
 
 export async function getPurchaseStats() {
   return apiFetch("/purchases/stats");
+}
+
+// ─── Generations ──────────────────────────────────────────────────────────────
+
+export async function listGenerations(
+  params: { page?: number; limit?: number; type?: string; search?: string } = {}
+) {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.type) q.set("type", params.type);
+  if (params.search) q.set("search", params.search);
+  return apiFetch(`/generations?${q.toString()}`);
+}
+
+// ─── API Keys ─────────────────────────────────────────────────────────────────
+
+export async function listApiKeys(params: { page?: number; limit?: number } = {}) {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  return apiFetch(`/api-keys?${q.toString()}`);
+}
+
+export async function revokeApiKey(id: string) {
+  return apiFetch(`/api-keys/${id}/revoke`, { method: "PUT" });
+}
+
+// ─── Background Tasks ────────────────────────────────────────────────────────
+
+export async function listBackgroundTasks(params: { page?: number; limit?: number; status?: string } = {}) {
+  const q = new URLSearchParams();
+  if (params.page) q.set("page", String(params.page));
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.status) q.set("status", params.status);
+  return apiFetch(`/background-tasks?${q.toString()}`);
+}
+
+// ─── Landing Media ────────────────────────────────────────────────────────────
+
+export async function getLandingMedia() {
+  return apiFetch("/landing-media");
+}
+
+export async function addLandingMedia(mediaUrls: string[]) {
+  return apiFetch("/landing-media", {
+    method: "POST",
+    body: JSON.stringify({ mediaUrls }),
+  });
+}
+
+export async function deleteLandingMedia(id: string) {
+  return apiFetch(`/landing-media/${id}`, { method: "DELETE" });
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+export async function sendPushNotification(title: string, body: string, userIds?: string[]) {
+  return apiFetch("/notifications/push", {
+    method: "POST",
+    body: JSON.stringify({ title, body, userIds }),
+  });
 }
 
 // ─── Email ────────────────────────────────────────────────────────────────────
