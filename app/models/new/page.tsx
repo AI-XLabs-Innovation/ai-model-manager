@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createModel } from '../../lib/aiModelsApi';
 
 export default function NewModelPage() {
@@ -8,60 +9,52 @@ export default function NewModelPage() {
   const [form, setForm] = useState<any>({ name: '', slug: '', provider: '', description: '', credits: 0, categories: '', version: '' });
   const [saving, setSaving] = useState(false);
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm((f: any) => ({ ...f, [name]: value }));
-  };
+  const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f: any) => ({ ...f, [e.target.name]: e.target.value }));
 
   const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
+    e.preventDefault(); setSaving(true);
     try {
       const payload = { ...form, credits: Number(form.credits), version: form.version || undefined, categories: form.categories ? form.categories.split(',').map((c: string) => c.trim()) : [] };
       const res = await createModel(payload);
       const slug = res?.data?.model?.slug || res?.model?.slug || form.slug;
       router.push(slug ? `/models/${encodeURIComponent(slug)}` : '/models');
-    } catch (err) {
-      console.error(err);
-      setSaving(false);
-    }
+    } catch (err) { console.error(err); setSaving(false); }
   };
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Create New AI Model</h1>
-      <form onSubmit={onSubmit} className="space-y-4 max-w-xl">
+    <div className="max-w-2xl">
+      <Link href="/models" className="inline-flex items-center gap-1 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors mb-6">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        Back to Models
+      </Link>
+
+      <div className="page-header"><h1>Create New Model</h1></div>
+
+      <form onSubmit={onSubmit} className="glass p-5 space-y-4">
+        {[
+          { label: "Name", name: "name" },
+          { label: "Slug", name: "slug" },
+          { label: "Provider", name: "provider" },
+          { label: "Version", name: "version" },
+        ].map(f => (
+          <div key={f.name}>
+            <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">{f.label}</label>
+            <input name={f.name} value={form[f.name]} onChange={onChange} className="input" />
+          </div>
+        ))}
         <div>
-          <label className="block text-sm font-medium">Name</label>
-          <input name="name" value={form.name} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
+          <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Credits</label>
+          <input name="credits" type="number" value={form.credits} onChange={onChange} className="input" />
         </div>
         <div>
-          <label className="block text-sm font-medium">Slug</label>
-          <input name="slug" value={form.slug} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
+          <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Categories (comma separated)</label>
+          <input name="categories" value={form.categories} onChange={onChange} className="input" />
         </div>
         <div>
-          <label className="block text-sm font-medium">Provider</label>
-          <input name="provider" value={form.provider} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
+          <label className="block text-xs font-medium text-[var(--muted-foreground)] mb-1">Description</label>
+          <textarea name="description" value={form.description} onChange={onChange} className="input" rows={4} style={{ resize: "vertical" }} />
         </div>
-        <div>
-          <label className="block text-sm font-medium">Version</label>
-          <input name="version" value={form.version} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Credits</label>
-          <input name="credits" type="number" value={form.credits} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Categories (comma separated)</label>
-          <input name="categories" value={form.categories} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Description</label>
-          <textarea name="description" value={form.description} onChange={onChange} className="mt-1 block w-full border rounded px-2 py-1" rows={5} />
-        </div>
-        <div>
-          <button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded">{saving ? 'Creating...' : 'Create Model'}</button>
-        </div>
+        <button type="submit" disabled={saving} className="btn btn-primary">{saving ? 'Creating...' : 'Create Model'}</button>
       </form>
     </div>
   );

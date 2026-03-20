@@ -8,57 +8,37 @@ export default function ProvidersPage() {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
 
   useEffect(() => {
-    const fetchProviders = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${apiBase}/api/v1/ai-models/providers`);
-        const json = await res.json();
-        setProviders(json.data?.providers || json.providers || []);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProviders();
+    fetch(`${apiBase}/api/v1/ai-models/providers`).then(r => r.json())
+      .then(json => setProviders(json.data?.providers || json.providers || []))
+      .catch(console.error).finally(() => setLoading(false));
   }, [apiBase]);
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Providers</h1>
+    <div>
+      <div className="page-header"><h1>Providers</h1><p>AI model providers powering the platform</p></div>
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-20 bg-white rounded-lg shadow-sm p-4 animate-pulse" />
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton h-20" />)}
         </div>
+      ) : (!providers || (Array.isArray(providers) && providers.length === 0)) ? (
+        <div className="glass p-8 text-center text-[var(--muted)]">No providers found</div>
       ) : (
-        <div>
-          {(!providers || (Array.isArray(providers) && providers.length === 0) || (typeof providers === 'object' && Object.keys(providers).length === 0)) ? (
-            <p className="text-gray-600">No providers found</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(Array.isArray(providers) ? providers : Object.keys(providers)).map((p: any) => {
-                const name = typeof p === 'string' ? p : String(p);
-                return (
-                  <Link key={name} href={`/models/provider/${encodeURIComponent(name)}`} className="group">
-                    <div className="bg-white border rounded-lg p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition">
-                      <div className="w-12 h-12 bg-gray-50 flex items-center justify-center rounded">
-                        <div className="text-sm text-gray-400">{name.charAt(0).toUpperCase()}</div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-800">{name}</div>
-                        <div className="text-sm text-gray-500">Provider</div>
-                      </div>
-                      <div>
-                        <span className="text-sm text-blue-600 group-hover:underline">View models →</span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {(Array.isArray(providers) ? providers : Object.keys(providers)).map((p: any) => {
+            const name = typeof p === 'string' ? p : String(p);
+            return (
+              <Link key={name} href={`/models/provider/${encodeURIComponent(name)}`} className="glass glass-hover p-4 flex items-center gap-4 group transition-all">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center shrink-0">
+                  <span className="text-lg font-bold text-[var(--accent-light)]">{name.charAt(0).toUpperCase()}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">{name}</p>
+                  <p className="text-[11px] text-[var(--muted)]">AI Provider</p>
+                </div>
+                <svg className="w-4 h-4 text-[var(--muted)] group-hover:text-[var(--accent-light)] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

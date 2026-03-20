@@ -47,92 +47,61 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Users</h1>
-        <span className="text-sm text-gray-400">{total} total</span>
+    <div>
+      <div className="page-header flex items-center justify-between">
+        <div>
+          <h1>Users</h1>
+          <p>{total.toLocaleString()} registered users</p>
+        </div>
       </div>
 
-      {/* Search */}
       <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-        <input
-          type="text"
-          placeholder="Search by email or name…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="flex-1 border rounded px-3 py-2 text-sm bg-transparent"
-        />
-        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded text-sm">
-          Search
-        </button>
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" placeholder="Search by email or name..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className="input pl-9" />
+        </div>
+        <button type="submit" className="btn btn-primary">Search</button>
         {search && (
-          <button
-            type="button"
-            onClick={() => { setSearchInput(""); setSearch(""); setPage(1); }}
-            className="px-3 py-2 border rounded text-sm"
-          >
-            Clear
-          </button>
+          <button type="button" onClick={() => { setSearchInput(""); setSearch(""); setPage(1); }} className="btn btn-secondary">Clear</button>
         )}
       </form>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-900/30 border border-red-700 rounded text-sm text-red-400">
-          {error}
-        </div>
+        <div className="mb-4 p-3 rounded-lg bg-[var(--danger-bg)] border border-red-500/20 text-sm text-red-400">{error}</div>
       )}
 
       {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-12 bg-white/5 rounded animate-pulse" />
-          ))}
-        </div>
+        <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton h-12" />)}</div>
       ) : (
-        <div className="overflow-x-auto rounded border border-white/10">
-          <table className="w-full text-sm">
+        <div className="glass overflow-hidden">
+          <table className="admin-table">
             <thead>
-              <tr className="border-b border-white/10 text-left text-gray-400">
-                <th className="px-4 py-3 font-medium">User</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium text-right">Credits</th>
-                <th className="px-4 py-3 font-medium">RevenueCat ID</th>
-                <th className="px-4 py-3 font-medium">Joined</th>
-                <th className="px-4 py-3 font-medium"></th>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th className="text-right">Credits</th>
+                <th>RevenueCat ID</th>
+                <th>Joined</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                    No users found
-                  </td>
-                </tr>
+                <tr><td colSpan={6} className="text-center py-8 text-[var(--muted)]">No users found</td></tr>
               ) : (
                 users.map((u) => (
-                  <tr key={u.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 font-medium">
-                      {u.full_name || <span className="text-gray-500">—</span>}
+                  <tr key={u.id}>
+                    <td className="font-medium">{u.full_name || <span className="text-[var(--muted)]">--</span>}</td>
+                    <td className="text-[var(--muted-foreground)]">{u.email}</td>
+                    <td className="text-right font-mono">
+                      <span className={u.credits <= 0 ? "text-red-400" : "text-emerald-400"}>{u.credits ?? 0}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-300">{u.email}</td>
-                    <td className="px-4 py-3 text-right font-mono">
-                      <span className={u.credits <= 0 ? "text-red-400" : "text-green-400"}>
-                        {u.credits ?? 0}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 text-xs font-mono truncate max-w-[160px]">
-                      {u.revenuecat_app_user_id || <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">
-                      {new Date(u.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/users/${u.id}`}
-                        className="text-blue-500 hover:text-blue-400 text-xs"
-                      >
-                        View →
-                      </Link>
+                    <td className="text-[var(--muted)] text-xs font-mono truncate max-w-[140px]">{u.revenuecat_app_user_id || "--"}</td>
+                    <td className="text-[var(--muted)]">{new Date(u.created_at).toLocaleDateString()}</td>
+                    <td className="text-right">
+                      <Link href={`/users/${u.id}`} className="btn btn-secondary btn-sm">View</Link>
                     </td>
                   </tr>
                 ))
@@ -142,27 +111,12 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between text-sm">
-          <span className="text-gray-400">
-            Page {page} of {totalPages}
-          </span>
+        <div className="pagination justify-between">
+          <span className="text-xs text-[var(--muted)]">Page {page} of {totalPages}</span>
           <div className="flex gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="px-3 py-1 border rounded disabled:opacity-40"
-            >
-              ← Prev
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="px-3 py-1 border rounded disabled:opacity-40"
-            >
-              Next →
-            </button>
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next</button>
           </div>
         </div>
       )}

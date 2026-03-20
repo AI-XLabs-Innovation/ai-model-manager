@@ -15,105 +15,79 @@ export default function ModelsPage() {
   const [pricingData, setPricingData] = useState<any>(null);
   const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
 
-  useEffect(() => {
-    getPricing()
-      .then((res) => setPricingData(res.data))
-      .catch(() => {});
-  }, []);
+  useEffect(() => { getPricing().then((res) => setPricingData(res.data)).catch(() => {}); }, []);
 
   useEffect(() => {
     const fetchModels = async () => {
       setLoading(true);
       try {
         const headers = await getAuthHeaders();
-        const res = await fetch(`${apiBase}/api/v1/ai-models/?page=${page}&page_size=${pageSize}`, {
-          headers
-        });
+        const res = await fetch(`${apiBase}/api/v1/ai-models/?page=${page}&page_size=${pageSize}`, { headers });
         const json = await res.json();
         setModels(json.data.models || []);
         setTotal(json.data?.total ?? 0);
         setTotalPages(json.data?.total_pages ?? 1);
         setPage(json.data?.page ?? page);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
+      } catch (e) { console.error(e); }
+      finally { setLoading(false); }
     };
     fetchModels();
   }, [apiBase, page, pageSize]);
 
-  // Build pricing lookup map: model name -> billing config
   const pricingMap = useMemo(() => {
     if (!pricingData?.content_type) return {};
     const map: Record<string, any> = {};
     for (const category of Object.values(pricingData.content_type) as any[]) {
       if (!Array.isArray(category)) continue;
-      for (const entry of category) {
-        if (entry.model && entry.billing) {
-          map[entry.model] = entry.billing;
-        }
-      }
+      for (const entry of category) { if (entry.model && entry.billing) map[entry.model] = entry.billing; }
     }
     return map;
   }, [pricingData]);
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold">All AI Models</h1>
-          <p className="text-sm text-gray-400 mt-1">{total} models total</p>
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <h1>AI Models</h1>
+          <p>{total.toLocaleString()} models in catalog</p>
         </div>
-        <div>
-          <Link href="/models/new" className="text-sm bg-blue-600 text-white px-3 py-1 rounded">Create Model</Link>
-        </div>
+        <Link href="/models/new" className="btn btn-primary">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
+          Create Model
+        </Link>
       </div>
-      <div className="mb-4 flex flex-wrap gap-3">
-        <Link href="/models/images" className="text-sm bg-white/5 border border-white/10 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Images</Link>
-        <Link href="/models/videos" className="text-sm bg-white/5 border border-white/10 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Videos</Link>
-        <Link href="/models/lipsync" className="text-sm bg-white/5 border border-white/10 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Lipsync</Link>
-        <Link href="/providers" className="text-sm bg-white/5 border border-white/10 px-3 py-1.5 rounded hover:bg-white/10 transition-colors">Providers</Link>
-        <Link href="/pricing" className="text-sm bg-amber-600 text-white px-3 py-1.5 rounded hover:bg-amber-700 transition-colors">View All Pricing</Link>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Link href="/models/images" className="btn btn-secondary btn-sm">Images</Link>
+        <Link href="/models/videos" className="btn btn-secondary btn-sm">Videos</Link>
+        <Link href="/models/lipsync" className="btn btn-secondary btn-sm">Lipsync</Link>
+        <Link href="/providers" className="btn btn-secondary btn-sm">Providers</Link>
+        <Link href="/pricing" className="btn btn-sm" style={{ background: "var(--warning-bg)", color: "var(--warning)", border: "1px solid rgba(245,158,11,0.15)" }}>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 10v1" /></svg>
+          View All Pricing
+        </Link>
       </div>
+
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-32 bg-white rounded-lg shadow-sm p-4 animate-pulse" />
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton h-24" />)}
         </div>
       ) : (
         <>
           <ModelList items={models} pricingMap={pricingMap} />
-
-          <div className="mt-6 flex items-center justify-between">
-            <div className="text-sm text-gray-100">Showing {(models.length > 0 ? (page - 1) * pageSize + 1 : 0)}–{Math.min(page * pageSize, total)} of {total}</div>
-
+          <div className="pagination justify-between">
+            <span className="text-xs text-[var(--muted)]">
+              {models.length > 0 ? (page - 1) * pageSize + 1 : 0}--{Math.min(page * pageSize, total)} of {total}
+            </span>
             <div className="flex items-center gap-3">
-              <label className="text-sm text-gray-100">Page size:</label>
-              <select
-                value={pageSize}
-                onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-                className="text-sm border rounded px-2 py-1"
-              >
-                {[6,12,18,24,48].map(n => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
+              <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }} className="input w-auto text-xs py-1.5">
+                {[6, 12, 18, 24, 48].map(n => <option key={n} value={n}>{n} / page</option>)}
               </select>
-
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-3 py-1 bg-white border text-black rounded disabled:opacity-50"
-              >Prev</button>
-
-              <div className="text-sm">{page} / {totalPages}</div>
-
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="px-3 py-1 bg-white text-black border rounded disabled:opacity-50"
-              >Next</button>
+              <div className="flex gap-1.5">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>Prev</button>
+                <span className="text-xs self-center text-[var(--muted)] px-1">{page} / {totalPages}</span>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>Next</button>
+              </div>
             </div>
           </div>
         </>
